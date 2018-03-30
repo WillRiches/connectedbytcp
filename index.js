@@ -1,6 +1,6 @@
 var util = require('util');
 var https = require('https');
-var xml = require('libxml-to-js');
+var xml2js = require('xml2js');
 
 module.exports = TCPConnected;
 
@@ -55,21 +55,19 @@ TCPConnected.prototype.GetState = function (cb){
 	var payload = util.format(RequestString,'GWRBatch',encodeURIComponent(StateString));
 
 	this.GWRequest(payload,function(data){
-		//process.stdout.write(data);
-		if(data == "<gip><version>1</version><rc>401</rc></gip>"){
-			console.log("Permission Denied: Invalid Token");
-		}else{
-			xml(data,function(error,result){
-				//console.log(result);
-				if (error) {
+		if (data == "<gip><version>1</version><rc>401</rc></gip>") {
+			console.error("Permission Denied: Invalid Token");
+		} else {
+			xml2js.parseString(data, function(error,result) {
+                if (error) {
 					cb(1);
 					return;
 				}else{
-					if(typeof(result["gip"]) !== 'undefined'){
+					if(typeof(result.gip) !== 'undefined'){
 						error = 1;
 					}else{
-						Rooms = result['gwrcmd']['gdata']['gip']['room'];
-						if (typeof(Rooms["rid"]) !== 'undefined'){
+						Rooms = result.gwrcmds.gwrcmd[0].gdata[0].gip[0].room;
+						if (typeof(Rooms.rid) !== 'undefined'){
 							Rooms = [ Rooms ];
 						}
 					}
@@ -155,6 +153,7 @@ TCPConnected.prototype.GetRoomStateByName = function (name, cb){
 }
 TCPConnected.prototype.GetRIDByName = function (name){
 	var rid = 0;
+
 	Rooms.forEach(function(room) {
 		if(room["name"] == name){
 			rid = room["rid"];

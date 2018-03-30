@@ -7,9 +7,8 @@
   },
   "main": "connectedbytcp",
   "dependencies": {
-	"util": "*",
-	"libxml-to-js": "*",
-	"events": "*"
+    "util": "^0.10.3",
+    "xml2js": "^0.4.19"
   },
   "readmeFilename": "README.md",
   "_id": "connectedbytcp@0.0.7",
