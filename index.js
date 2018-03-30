@@ -1,9 +1,6 @@
 var util = require('util');
 var https = require('https');
 var xml = require('libxml-to-js');
-var EventEmitter = require('events').EventEmitter;
-var nconf = require('nconf');
-var uuid = require('node-uuid');
 
 module.exports = TCPConnected;
 
@@ -23,52 +20,12 @@ var Rooms = [];
 // needed to keep socket variable in scope
 var tcpSocket = this;
 
-function TCPConnected(host) {
-	EventEmitter.call(this);
+function TCPConnected(host, token) {
 	if (!host) throw new Error("Invalid Parameters to TCP Connected")
 	this._host = host;
-	this._hasToken = 0;
+	this._token = token;
 };
-TCPConnected.prototype.Init = function(cb){
-	this.LoadToken(cb);
-}
-TCPConnected.prototype.GWEnd = function(){
-	tcpSocket.end();
-}
 TCPConnected.prototype.GWRequest = function(payload,cb){
-	if(!this._hasToken){
-		cb(1);
-	}else{
-		var options = {
-			hostname: this._host,
-			port: 443,
-			path: '/gwr/gop.php',
-			method: 'POST',
-			headers:{
-			  'Content-Type':'text/xml; charset="utf-8"',
-			  'Content-Length':payload.length
-			},
-			rejectUnauthorized: false,
-			agent: false
-		};
-
-		tcpSocket = https.request(options, function(res) {
-			res.on('data', function(data){
-				cb(data);
-			});
-		});
-
-		tcpSocket.write(payload);
-	}
-}
-TCPConnected.prototype.SyncGateway = function(cb){
-	var myuuid = uuid.v4();
-	var username = myuuid;
-	var password = myuuid;
-
-	var gLogInCommand = util.format(LogInCommand,username,password);
-
-	var payload = util.format(RequestString,'GWRLogin',encodeURIComponent(gLogInCommand));
 	var options = {
 		hostname: this._host,
 		port: 443,
@@ -84,45 +41,15 @@ TCPConnected.prototype.SyncGateway = function(cb){
 
 	tcpSocket = https.request(options, function(res) {
 		res.on('data', function(data){
-			process.stdout.write(data);
-			if(data == "<gip><version>1</version><rc>404</rc></gip>"){
-				console.log("Permission Denied: Gateway Not In Sync Mode. Press Button on Gateway to Sync.");
-				cb(1);
-			}else{
-				xml(data,function(error,result){
-					if(result['token'] != undefined){
-						this._token = result['token'];
-						nconf.use('file', { file: './config.json' });
-						nconf.set('token', this._token);
-						nconf.save(function (err) {
-							if (err) {
-								console.error(err.message);
-								return;
-							}
-							console.log('Configuration saved successfully.');
-						});
-						cb(0);
-					}
-				});
-			}
+			cb(data);
 		});
 	});
 
-	tcpSocket.write(payload);
+	tcpSocket.write(payload)
+
+    tcpSocket.end();
 }
-TCPConnected.prototype.LoadToken = function(cb){
-	nconf.use('file', { file: './config.json' });
-	nconf.load();
-	if(nconf.get('token') != undefined){
-		this._token = nconf.get('token');
-		this._hasToken = 1;
-		cb(0);
-	}else{
-		console.log("No Token Saved. Attempting to Connect With Gateway to Get Token.");
-		console.log("Button On Gateway Must Be Pressed Prior to This.");
-		this.SyncGateway(cb);
-	}
-}
+
 TCPConnected.prototype.GetState = function (cb){
 	var StateString = util.format(GetStateString,this._token);
 	var payload = util.format(RequestString,'GWRBatch',encodeURIComponent(StateString));
@@ -153,7 +80,6 @@ TCPConnected.prototype.GetState = function (cb){
 	});
 }
 TCPConnected.prototype.TurnOnDevice = function (did, cb){
-
 	var DeviceCommand = util.format(DeviceSendCommand,this._token,did,1);
 	var payload = util.format(RequestString,'DeviceSendCommand',encodeURIComponent(DeviceCommand));
 
@@ -162,7 +88,6 @@ TCPConnected.prototype.TurnOnDevice = function (did, cb){
 	});
 }
 TCPConnected.prototype.TurnOffDevice = function (did, cb){
-
 	var DeviceCommand = util.format(DeviceSendCommand,this._token,did,0);
 	var payload = util.format(RequestString,'DeviceSendCommand',encodeURIComponent(DeviceCommand));
 

@@ -9,11 +9,9 @@
   "dependencies": {
 	"util": "*",
 	"libxml-to-js": "*",
-	"events": "*",
-	"nconf": "*",
-	"node-uuid": "*"
+	"events": "*"
   },
   "readmeFilename": "README.md",
-  "_id": "connectedbytcp@0.0.7", 
+  "_id": "connectedbytcp@0.0.7",
   "description": "Connected by TCP client"
 }
