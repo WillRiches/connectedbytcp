@@ -20,15 +20,16 @@ var Rooms = [];
 // needed to keep socket variable in scope
 var tcpSocket = this;
 
-function TCPConnected(host, token) {
+function TCPConnected(host, port, token) {
 	if (!host) throw new Error("Invalid Parameters to TCP Connected")
 	this._host = host;
+    this._port = port;
 	this._token = token;
 };
 TCPConnected.prototype.GWRequest = function(payload,cb){
 	var options = {
 		hostname: this._host,
-		port: 443,
+		port: this._port,
 		path: '/gwr/gop.php',
 		method: 'POST',
 		headers:{
